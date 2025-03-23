@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -94,15 +95,55 @@ public class ContractService {
         return new HashSet<>(contractRepo.findAll());
     }
 
-    public double calculateWeeklyRevenue() {
-        return contractRepo.calculateRevenueForPeriod(
-                LocalDate.now().minusWeeks(1), LocalDate.now()
-        );
+    public Map<Integer, Double> getMonthlyRevenueByYear(int year) {
+        List<Object[]> result = contractRepo.findMonthlyRevenueByYear(year);
+        Map<Integer, Double> monthlyRevenue = new HashMap<>();
+
+        // Khởi tạo doanh thu cho tất cả các tháng là 0
+        for (int i = 1; i <= 12; i++) {
+            monthlyRevenue.put(i, 0.0);
+        }
+
+        // Cập nhật doanh thu từ kết quả truy vấn
+        for (Object[] row : result) {
+            int month = (int) row[0];
+            double revenue = (double) row[1];
+            monthlyRevenue.put(month, revenue);
+        }
+
+        return monthlyRevenue;
     }
 
-    public double calculateMonthlyRevenue() {
-        return contractRepo.calculateRevenueForPeriod(
-                LocalDate.now().minusMonths(1), LocalDate.now()
-        );
+    // Lấy doanh thu từng tuần trong tháng
+    public Map<Integer, Double> getWeeklyRevenueByMonth(int month, int year) {
+        // Lấy ngày đầu tiên của tháng
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        // Lấy ngày cuối cùng của tháng
+        LocalDate endDate = startDate.with(TemporalAdjusters.lastDayOfMonth());
+
+        // Khởi tạo map để lưu doanh thu theo tuần
+        Map<Integer, Double> weeklyRevenue = new HashMap<>();
+
+        // Tính toán doanh thu cho từng tuần trong tháng
+        LocalDate currentDate = startDate;
+        int weekOfMonth = 1;
+        while (!currentDate.isAfter(endDate)) {
+            // Tính ngày kết thúc của tuần
+            LocalDate endOfWeek = currentDate.plusDays(6);
+            if (endOfWeek.isAfter(endDate)) {
+                endOfWeek = endDate;
+            }
+
+            // Tính doanh thu cho tuần hiện tại
+            Double revenue = contractRepo.calculateRevenueForPeriod(currentDate, endOfWeek);
+            // Xử lý trường hợp revenue là null
+            weeklyRevenue.put(weekOfMonth, revenue != null ? revenue : 0.0);
+
+            // Chuyển sang tuần tiếp theo
+            currentDate = endOfWeek.plusDays(1);
+            weekOfMonth++;
+        }
+
+        return weeklyRevenue;
     }
 }

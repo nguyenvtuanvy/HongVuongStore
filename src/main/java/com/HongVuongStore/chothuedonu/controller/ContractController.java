@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Set;
 
 @RestController
@@ -46,15 +47,14 @@ public class ContractController {
         return new ResponseEntity<>(contracts, HttpStatus.OK);
     }
 
-    @GetMapping("/revenue/weekly")
-    public ResponseEntity<Double> getWeeklyRevenue() {
-        double weeklyRevenue = contractService.calculateWeeklyRevenue();
-        return new ResponseEntity<>(weeklyRevenue, HttpStatus.OK);
-    }
 
     @GetMapping("/revenue/monthly")
-    public ResponseEntity<Double> getMonthlyRevenue() {
-        double monthlyRevenue = contractService.calculateMonthlyRevenue();
-        return new ResponseEntity<>(monthlyRevenue, HttpStatus.OK);
+    public ResponseEntity<?> getMonthlyRevenueByYear(@RequestParam int year) {
+        return new ResponseEntity<>(contractService.getMonthlyRevenueByYear(year), HttpStatus.OK);
+    }
+
+    @GetMapping("/revenue/weekly")
+    public ResponseEntity<?> getWeeklyRevenueByMonth(@RequestParam int month, @RequestParam int year) {
+        return new ResponseEntity<>(contractService.getWeeklyRevenueByMonth(month, year), HttpStatus.OK);
     }
 }
